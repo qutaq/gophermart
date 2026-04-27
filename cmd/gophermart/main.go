@@ -30,6 +30,10 @@ func run() error {
 	}
 	defer store.Close()
 
+	if err := store.MigrateUp(ctx); err != nil {
+		return err
+	}
+
 	log.Printf("gophermart: started run_address=%q accrual=%q",
 		cfg.RunAddress, cfg.AccrualSystemAddress)
 
