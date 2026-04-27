@@ -45,9 +45,10 @@ func run() error {
 	}
 
 	userRepository := repository.NewUserRepository(store.Pool())
+	orderRepository := repository.NewOrderRepository(store.Pool())
 
 	router := chi.NewRouter()
-	handler.New(userRepository, []byte(cfg.JWTSecret)).RegisterRoutes(router)
+	handler.New(userRepository, orderRepository, []byte(cfg.JWTSecret)).RegisterRoutes(router)
 
 	server := &http.Server{
 		Addr:    cfg.RunAddress,

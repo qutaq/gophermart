@@ -6,28 +6,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/qutaq/gophermart/internal/auth"
 	"github.com/qutaq/gophermart/internal/domain"
 	"github.com/qutaq/gophermart/internal/repository"
 )
-
-type Handler struct {
-	users     repository.UserRepository
-	jwtSecret []byte
-}
-
-func New(users repository.UserRepository, jwtSecret []byte) *Handler {
-	return &Handler{
-		users:     users,
-		jwtSecret: jwtSecret,
-	}
-}
-
-func (h *Handler) RegisterRoutes(r chi.Router) {
-	r.Post("/api/user/register", h.Register)
-	r.Post("/api/user/login", h.Login)
-}
 
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	credentials, ok := decodeCredentials(w, r)

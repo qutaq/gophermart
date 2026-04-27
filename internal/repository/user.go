@@ -6,9 +6,9 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/qutaq/gophermart/internal/domain"
+	"github.com/qutaq/gophermart/internal/pgerr"
 )
 
 type userRepository struct {
@@ -30,8 +30,7 @@ func (r *userRepository) Create(ctx context.Context, login, passwordHash string)
 	err := r.db.QueryRow(ctx, query, login, passwordHash).
 		Scan(&user.ID, &user.Login, &user.PasswordHash)
 	if err != nil {
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+		if pgerr.UniqueViolation(err) {
 			return domain.User{}, ErrConflict
 		}
 		return domain.User{}, fmt.Errorf("user repository: create: %w", err)
