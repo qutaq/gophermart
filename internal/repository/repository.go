@@ -8,13 +8,20 @@ import (
 )
 
 var (
-	ErrConflict = errors.New("repository: conflict")
-	ErrNotFound = errors.New("repository: not found")
+	ErrConflict         = errors.New("repository: conflict")
+	ErrNotFound         = errors.New("repository: not found")
+	ErrInsufficientFunds = errors.New("repository: insufficient funds")
 )
 
 type UserRepository interface {
 	Create(ctx context.Context, login, passwordHash string) (domain.User, error)
 	ByLogin(ctx context.Context, login string) (domain.User, error)
+	Balance(ctx context.Context, userID int64) (current, withdrawn domain.Kopecks, err error)
+	Withdraw(ctx context.Context, userID int64, orderNumber string, sum domain.Kopecks) error
+}
+
+type WithdrawalRepository interface {
+	ByUser(ctx context.Context, userID int64) ([]domain.Withdrawal, error)
 }
 
 type OrderRepository interface {

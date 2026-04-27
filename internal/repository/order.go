@@ -38,13 +38,13 @@ func (r *orderRepository) Create(ctx context.Context, userID int64, number strin
 
 func (r *orderRepository) ByNumber(ctx context.Context, number string) (domain.Order, error) {
 	const query = `
-		SELECT number, user_id, status, accrual::double precision, uploaded_at
+		SELECT number, user_id, status, accrual, uploaded_at
 		FROM orders
 		WHERE number = $1
 	`
 
 	var order domain.Order
-	var accrual pgtype.Float8
+	var accrual pgtype.Int8
 	err := r.db.QueryRow(ctx, query, number).
 		Scan(&order.Number, &order.UserID, &order.Status, &accrual, &order.UploadedAt)
 	if err != nil {
@@ -59,7 +59,7 @@ func (r *orderRepository) ByNumber(ctx context.Context, number string) (domain.O
 
 func (r *orderRepository) ByUser(ctx context.Context, userID int64) ([]domain.Order, error) {
 	const query = `
-		SELECT number, user_id, status, accrual::double precision, uploaded_at
+		SELECT number, user_id, status, accrual, uploaded_at
 		FROM orders
 		WHERE user_id = $1
 		ORDER BY uploaded_at DESC
@@ -74,7 +74,7 @@ func (r *orderRepository) ByUser(ctx context.Context, userID int64) ([]domain.Or
 	orders := make([]domain.Order, 0)
 	for rows.Next() {
 		var order domain.Order
-		var accrual pgtype.Float8
+		var accrual pgtype.Int8
 		if err := rows.Scan(
 			&order.Number,
 			&order.UserID,
@@ -94,10 +94,10 @@ func (r *orderRepository) ByUser(ctx context.Context, userID int64) ([]domain.Or
 	return orders, nil
 }
 
-func accrualPtr(accrual pgtype.Float8) *float64 {
+func accrualPtr(accrual pgtype.Int8) *domain.Kopecks {
 	if !accrual.Valid {
 		return nil
 	}
-	value := accrual.Float64
-	return &value
+	v := domain.Kopecks(accrual.Int64)
+	return &v
 }

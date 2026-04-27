@@ -16,10 +16,10 @@ import (
 )
 
 type orderResponse struct {
-	Number     string   `json:"number"`
-	Status     string   `json:"status"`
-	Accrual    *float64 `json:"accrual,omitempty"`
-	UploadedAt string   `json:"uploaded_at"`
+	Number     string          `json:"number"`
+	Status     string          `json:"status"`
+	Accrual    *domain.Kopecks `json:"accrual,omitempty"`
+	UploadedAt string          `json:"uploaded_at"`
 }
 
 func (h *Handler) UploadOrder(w http.ResponseWriter, r *http.Request) {

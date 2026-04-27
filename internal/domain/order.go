@@ -6,6 +6,6 @@ type Order struct {
 	Number     string
 	UserID     int64
 	Status     string
-	Accrual    *float64
+	Accrual    *Kopecks
 	UploadedAt time.Time
 }
