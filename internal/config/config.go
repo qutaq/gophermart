@@ -9,6 +9,7 @@ type Config struct {
 	RunAddress           string
 	DatabaseURI          string
 	AccrualSystemAddress string
+	JWTSecret            string
 }
 
 func Parse() Config {
@@ -30,6 +31,9 @@ func Parse() Config {
 	}
 	if v, ok := os.LookupEnv("ACCRUAL_SYSTEM_ADDRESS"); ok {
 		cfg.AccrualSystemAddress = v
+	}
+	if v, ok := os.LookupEnv("JWT_SECRET"); ok {
+		cfg.JWTSecret = v
 	}
 
 	return cfg

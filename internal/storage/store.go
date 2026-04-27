@@ -1,4 +1,4 @@
-package postgres
+package storage
 
 import (
 	"context"
@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/qutaq/gophermart/internal/storage"
 	"github.com/qutaq/gophermart/migrations"
 )
 
@@ -51,11 +50,11 @@ func (s *Store) ExecContext(ctx context.Context, query string, args ...any) erro
 	return nil
 }
 
-func (s *Store) QueryRowContext(ctx context.Context, query string, args ...any) storage.Row {
+func (s *Store) QueryRowContext(ctx context.Context, query string, args ...any) Row {
 	return s.pool.QueryRow(ctx, query, args...)
 }
 
-func (s *Store) QueryContext(ctx context.Context, query string, args ...any) (storage.Rows, error) {
+func (s *Store) QueryContext(ctx context.Context, query string, args ...any) (Rows, error) {
 	rows, err := s.pool.Query(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("postgres: query: %w", err)
