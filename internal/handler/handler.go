@@ -3,6 +3,7 @@ package handler
 import (
 	"github.com/go-chi/chi/v5"
 	"github.com/qutaq/gophermart/internal/auth"
+	"github.com/qutaq/gophermart/internal/middleware"
 	"github.com/qutaq/gophermart/internal/repository"
 )
 
@@ -28,6 +29,9 @@ func New(
 }
 
 func (h *Handler) RegisterRoutes(r chi.Router) {
+	r.Use(middleware.GzipDecompress)
+	r.Use(middleware.GzipCompress)
+
 	r.Post("/api/user/register", h.Register)
 	r.Post("/api/user/login", h.Login)
 
