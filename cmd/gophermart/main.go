@@ -10,10 +10,12 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/qutaq/gophermart/internal/accrual"
 	"github.com/qutaq/gophermart/internal/config"
 	"github.com/qutaq/gophermart/internal/handler"
 	"github.com/qutaq/gophermart/internal/repository"
 	"github.com/qutaq/gophermart/internal/storage"
+	"github.com/qutaq/gophermart/internal/worker"
 )
 
 const shutdownTimeout = 5 * time.Second
@@ -47,6 +49,9 @@ func run() error {
 	userRepository := repository.NewUserRepository(store.Pool())
 	orderRepository := repository.NewOrderRepository(store.Pool())
 	withdrawalRepository := repository.NewWithdrawalRepository(store.Pool())
+
+	accrualClient := accrual.NewClient(cfg.AccrualSystemAddress)
+	go worker.New(orderRepository, accrualClient).Run(ctx)
 
 	router := chi.NewRouter()
 	handler.New(userRepository, orderRepository, withdrawalRepository, []byte(cfg.JWTSecret)).RegisterRoutes(router)

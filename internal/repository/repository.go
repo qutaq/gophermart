@@ -28,4 +28,6 @@ type OrderRepository interface {
 	Create(ctx context.Context, userID int64, number string) error
 	ByNumber(ctx context.Context, number string) (domain.Order, error)
 	ByUser(ctx context.Context, userID int64) ([]domain.Order, error)
+	Pending(ctx context.Context, limit int) ([]domain.Order, error)
+	ApplyAccrual(ctx context.Context, number, status string, accrual *domain.Kopecks, userID int64) error
 }
