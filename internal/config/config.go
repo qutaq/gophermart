@@ -1,6 +1,8 @@
 package config
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"flag"
 	"os"
 )
@@ -34,6 +36,13 @@ func Parse() Config {
 	}
 	if v, ok := os.LookupEnv("JWT_SECRET"); ok {
 		cfg.JWTSecret = v
+	}
+	if cfg.JWTSecret == "" {
+		b := make([]byte, 32)
+		if _, err := rand.Read(b); err != nil {
+			panic("config: не удалось сгенерировать JWT_SECRET: " + err.Error())
+		}
+		cfg.JWTSecret = hex.EncodeToString(b)
 	}
 
 	return cfg

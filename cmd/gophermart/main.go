@@ -28,9 +28,6 @@ func main() {
 
 func run() error {
 	cfg := config.Parse()
-	if cfg.JWTSecret == "" {
-		return errors.New("config: пустой JWT_SECRET")
-	}
 
 	ctx, stop := signal.NotifyContext(context.Background(),
 		syscall.SIGINT, syscall.SIGTERM)
