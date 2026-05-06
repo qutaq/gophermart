@@ -22,12 +22,16 @@ type orderRepository interface {
 	ApplyAccrual(ctx context.Context, number, status string, accrual *domain.Kopecks, userID int64) error
 }
 
-type Poller struct {
-	orders orderRepository
-	client *accrual.Client
+type accrualClient interface {
+	GetOrder(ctx context.Context, number string) (*accrual.OrderResult, error)
 }
 
-func New(orders orderRepository, client *accrual.Client) *Poller {
+type Poller struct {
+	orders orderRepository
+	client accrualClient
+}
+
+func New(orders orderRepository, client accrualClient) *Poller {
 	return &Poller{orders: orders, client: client}
 }
 
