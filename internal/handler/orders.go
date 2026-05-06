@@ -108,7 +108,6 @@ func (h *Handler) writeConflictingOrderStatus(w http.ResponseWriter, r *http.Req
 
 func writeKnownOrderStatus(w http.ResponseWriter, order domain.Order, userID int64) {
 	if order.UserID == userID {
-		w.WriteHeader(http.StatusOK)
 		return
 	}
 	http.Error(w, http.StatusText(http.StatusConflict), http.StatusConflict)

@@ -106,7 +106,6 @@ func TestRequireAuth_ValidCookie(t *testing.T) {
 
 func okHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
 	})
 }
 
@@ -120,6 +119,5 @@ func captureIDHandler(t *testing.T, wantID int64) http.Handler {
 		if id != wantID {
 			t.Errorf("userID = %d, want %d", id, wantID)
 		}
-		w.WriteHeader(http.StatusOK)
 	})
 }

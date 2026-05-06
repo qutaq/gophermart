@@ -75,7 +75,6 @@ func TestGzipDecompress_HeaderCleared(t *testing.T) {
 	var gotEncoding string
 	spy := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotEncoding = r.Header.Get("Content-Encoding")
-		w.WriteHeader(http.StatusOK)
 	})
 
 	var buf bytes.Buffer
@@ -143,7 +142,6 @@ func TestGzipCompress_WithAcceptEncoding(t *testing.T) {
 func TestGzipCompress_ContentLengthRemoved(t *testing.T) {
 	fixed := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Length", "999")
-		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(testBody))
 	})
 

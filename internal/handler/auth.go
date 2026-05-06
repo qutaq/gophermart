@@ -68,7 +68,6 @@ func (h *Handler) authenticate(w http.ResponseWriter, userID int64) {
 	}
 
 	auth.SetAuthCookie(w, token)
-	w.WriteHeader(http.StatusOK)
 }
 
 func decodeCredentials(w http.ResponseWriter, r *http.Request) (domain.Credentials, bool) {

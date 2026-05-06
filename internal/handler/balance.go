@@ -73,7 +73,6 @@ func (h *Handler) Withdraw(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
 }
 
 func (h *Handler) Withdrawals(w http.ResponseWriter, r *http.Request) {
