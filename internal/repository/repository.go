@@ -3,13 +3,14 @@ package repository
 import (
 	"context"
 	"errors"
+	"iter"
 
 	"github.com/qutaq/gophermart/internal/domain"
 )
 
 var (
-	ErrConflict         = errors.New("repository: conflict")
-	ErrNotFound         = errors.New("repository: not found")
+	ErrConflict          = errors.New("repository: conflict")
+	ErrNotFound          = errors.New("repository: not found")
 	ErrInsufficientFunds = errors.New("repository: insufficient funds")
 )
 
@@ -28,6 +29,6 @@ type OrderRepository interface {
 	Create(ctx context.Context, userID int64, number string) error
 	ByNumber(ctx context.Context, number string) (domain.Order, error)
 	ByUser(ctx context.Context, userID int64) ([]domain.Order, error)
-	Pending(ctx context.Context, limit int) ([]domain.Order, error)
+	Pending(ctx context.Context, limit int) iter.Seq2[domain.Order, error]
 	ApplyAccrual(ctx context.Context, number, status string, accrual *domain.Kopecks, userID int64) error
 }

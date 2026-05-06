@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"iter"
 	"log"
 	"time"
 
 	"github.com/qutaq/gophermart/internal/accrual"
-	"github.com/qutaq/gophermart/internal/repository"
+	"github.com/qutaq/gophermart/internal/domain"
 )
 
 const (
@@ -16,12 +17,17 @@ const (
 	batchSize    = 10
 )
 
+type orderRepository interface {
+	Pending(ctx context.Context, limit int) iter.Seq2[domain.Order, error]
+	ApplyAccrual(ctx context.Context, number, status string, accrual *domain.Kopecks, userID int64) error
+}
+
 type Poller struct {
-	orders repository.OrderRepository
+	orders orderRepository
 	client *accrual.Client
 }
 
-func New(orders repository.OrderRepository, client *accrual.Client) *Poller {
+func New(orders orderRepository, client *accrual.Client) *Poller {
 	return &Poller{orders: orders, client: client}
 }
 
@@ -50,12 +56,11 @@ func (p *Poller) Run(ctx context.Context) {
 }
 
 func (p *Poller) poll(ctx context.Context) error {
-	orders, err := p.orders.Pending(ctx, batchSize)
-	if err != nil {
-		return fmt.Errorf("worker: fetch pending: %w", err)
-	}
+	for order, err := range p.orders.Pending(ctx, batchSize) {
+		if err != nil {
+			return fmt.Errorf("worker: fetch pending: %w", err)
+		}
 
-	for _, order := range orders {
 		result, err := p.client.GetOrder(ctx, order.Number)
 		if err != nil {
 			var rateLimitErr *accrual.ErrRateLimit

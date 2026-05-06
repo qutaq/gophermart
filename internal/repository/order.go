@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"iter"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -94,7 +95,7 @@ func (r *orderRepository) ByUser(ctx context.Context, userID int64) ([]domain.Or
 	return orders, nil
 }
 
-func (r *orderRepository) Pending(ctx context.Context, limit int) ([]domain.Order, error) {
+func (r *orderRepository) Pending(ctx context.Context, limit int) iter.Seq2[domain.Order, error] {
 	const query = `
 		SELECT number, user_id, status, accrual, uploaded_at
 		FROM orders
@@ -102,26 +103,30 @@ func (r *orderRepository) Pending(ctx context.Context, limit int) ([]domain.Orde
 		LIMIT $1
 	`
 
-	rows, err := r.db.Query(ctx, query, limit)
-	if err != nil {
-		return nil, fmt.Errorf("order repository: pending: %w", err)
-	}
-	defer rows.Close()
-
-	orders := make([]domain.Order, 0)
-	for rows.Next() {
-		var order domain.Order
-		var accrual pgtype.Int8
-		if err := rows.Scan(&order.Number, &order.UserID, &order.Status, &accrual, &order.UploadedAt); err != nil {
-			return nil, fmt.Errorf("order repository: pending scan: %w", err)
+	return func(yield func(domain.Order, error) bool) {
+		rows, err := r.db.Query(ctx, query, limit)
+		if err != nil {
+			yield(domain.Order{}, fmt.Errorf("order repository: pending: %w", err))
+			return
 		}
-		order.Accrual = accrualPtr(accrual)
-		orders = append(orders, order)
+		defer rows.Close()
+
+		for rows.Next() {
+			var order domain.Order
+			var accrual pgtype.Int8
+			if err := rows.Scan(&order.Number, &order.UserID, &order.Status, &accrual, &order.UploadedAt); err != nil {
+				yield(domain.Order{}, fmt.Errorf("order repository: pending scan: %w", err))
+				return
+			}
+			order.Accrual = accrualPtr(accrual)
+			if !yield(order, nil) {
+				return
+			}
+		}
+		if err := rows.Err(); err != nil {
+			yield(domain.Order{}, fmt.Errorf("order repository: pending rows: %w", err))
+		}
 	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("order repository: pending rows: %w", err)
-	}
-	return orders, nil
 }
 
 func (r *orderRepository) ApplyAccrual(ctx context.Context, number, status string, accrual *domain.Kopecks, userID int64) error {
