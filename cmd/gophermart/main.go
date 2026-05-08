@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -17,6 +18,7 @@ import (
 	"github.com/qutaq/gophermart/internal/repository"
 	"github.com/qutaq/gophermart/internal/storage"
 	"github.com/qutaq/gophermart/internal/worker"
+	"golang.org/x/sync/errgroup"
 )
 
 const shutdownTimeout = 5 * time.Second
@@ -34,6 +36,7 @@ func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(),
 		syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
+	g, ctx := errgroup.WithContext(ctx)
 
 	store, err := storage.New(ctx, cfg.DatabaseURI)
 	if err != nil {
@@ -50,7 +53,7 @@ func run() error {
 	withdrawalRepository := repository.NewWithdrawalRepository(store.Pool())
 
 	accrualClient := accrual.NewClient(cfg.AccrualSystemAddress)
-	go worker.New(orderRepository, accrualClient).Run(ctx)
+	poller := worker.New(orderRepository, accrualClient, worker.WithPollInterval(1*time.Second), worker.WithBatchSize(10))
 
 	router := chi.NewRouter()
 	handler.New(userRepository, orderRepository, withdrawalRepository, []byte(cfg.JWTSecret)).RegisterRoutes(router)
@@ -60,33 +63,34 @@ func run() error {
 		Handler: router,
 	}
 
-	serverErr := make(chan error, 1)
-	go func() {
+	g.Go(func() error {
 		if err := server.ListenAndServe(); err != nil &&
 			!errors.Is(err, http.ErrServerClosed) {
-			serverErr <- err
-			return
+			return err
 		}
-		serverErr <- nil
-	}()
+		return nil
+	})
+	g.Go(func() error {
+		<-ctx.Done()
+
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+		defer cancel()
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			return fmt.Errorf("server shutdown: %w", err)
+		}
+		return nil
+	})
+	g.Go(func() error {
+		return poller.Run(ctx)
+	})
 
 	slog.Info("gophermart started",
 		"run_address", cfg.RunAddress,
 		"accrual", cfg.AccrualSystemAddress,
 	)
 
-	select {
-	case err := <-serverErr:
+	if err := g.Wait(); err != nil {
 		return err
-	case <-ctx.Done():
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
-		defer cancel()
-		if err := server.Shutdown(shutdownCtx); err != nil {
-			return err
-		}
-		if err := <-serverErr; err != nil {
-			return err
-		}
 	}
 
 	slog.Info("gophermart shutdown complete")

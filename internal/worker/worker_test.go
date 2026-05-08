@@ -15,6 +15,7 @@ type fakeOrderRepository struct {
 	pending    []domain.Order
 	pendingErr error
 	applied    []appliedAccrual
+	limit      int
 }
 
 type appliedAccrual struct {
@@ -24,7 +25,8 @@ type appliedAccrual struct {
 	userID  int64
 }
 
-func (r *fakeOrderRepository) Pending(context.Context, int) iter.Seq2[domain.Order, error] {
+func (r *fakeOrderRepository) Pending(_ context.Context, limit int) iter.Seq2[domain.Order, error] {
+	r.limit = limit
 	return func(yield func(domain.Order, error) bool) {
 		for _, order := range r.pending {
 			if !yield(order, nil) {
@@ -115,5 +117,18 @@ func TestPollReturnsRateLimitError(t *testing.T) {
 	}
 	if len(orders.applied) != 0 {
 		t.Fatalf("expected no applied accruals, got %d", len(orders.applied))
+	}
+}
+
+func TestPollUsesConfiguredBatchSize(t *testing.T) {
+	orders := &fakeOrderRepository{}
+	client := fakeAccrualClient{}
+	poller := New(orders, client, WithBatchSize(3))
+
+	if err := poller.poll(context.Background()); err != nil {
+		t.Fatalf("poll returned error: %v", err)
+	}
+	if orders.limit != 3 {
+		t.Fatalf("batch size = %d, want 3", orders.limit)
 	}
 }
