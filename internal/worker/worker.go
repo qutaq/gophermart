@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"iter"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/qutaq/gophermart/internal/accrual"
@@ -40,7 +40,7 @@ func (p *Poller) Run(ctx context.Context) {
 		if err := p.poll(ctx); err != nil {
 			var rateLimitErr *accrual.ErrRateLimit
 			if errors.As(err, &rateLimitErr) {
-				log.Printf("worker: rate limited, sleeping %s", rateLimitErr.RetryAfter)
+				slog.Info("worker: rate limited, sleeping", "retry_after", rateLimitErr.RetryAfter)
 				select {
 				case <-time.After(rateLimitErr.RetryAfter):
 				case <-ctx.Done():
@@ -48,7 +48,7 @@ func (p *Poller) Run(ctx context.Context) {
 				}
 				continue
 			}
-			log.Printf("worker: poll error: %v", err)
+			slog.Error("worker: poll error", "error", err)
 		}
 
 		select {
@@ -71,7 +71,7 @@ func (p *Poller) poll(ctx context.Context) error {
 			if errors.As(err, &rateLimitErr) {
 				return err
 			}
-			log.Printf("worker: get order %s: %v", order.Number, err)
+			slog.Error("worker: get order", "number", order.Number, "error", err)
 			continue
 		}
 		if result == nil {
@@ -81,7 +81,7 @@ func (p *Poller) poll(ctx context.Context) error {
 
 		newStatus := mapStatus(result.Status)
 		if err := p.orders.ApplyAccrual(ctx, order.Number, newStatus, result.Accrual, order.UserID); err != nil {
-			log.Printf("worker: apply accrual for %s: %v", order.Number, err)
+			slog.Error("worker: apply accrual", "number", order.Number, "error", err)
 		}
 	}
 

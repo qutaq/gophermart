@@ -3,8 +3,9 @@ package main
 import (
 	"context"
 	"errors"
-	"log"
+	"log/slog"
 	"net/http"
+	"os"
 	"os/signal"
 	"syscall"
 	"time"
@@ -22,7 +23,8 @@ const shutdownTimeout = 5 * time.Second
 
 func main() {
 	if err := run(); err != nil {
-		log.Fatalf("gophermart: %v", err)
+		slog.Error("gophermart failed", "error", err)
+		os.Exit(1)
 	}
 }
 
@@ -68,8 +70,10 @@ func run() error {
 		serverErr <- nil
 	}()
 
-	log.Printf("gophermart: started run_address=%q accrual=%q",
-		cfg.RunAddress, cfg.AccrualSystemAddress)
+	slog.Info("gophermart started",
+		"run_address", cfg.RunAddress,
+		"accrual", cfg.AccrualSystemAddress,
+	)
 
 	select {
 	case err := <-serverErr:
@@ -85,6 +89,6 @@ func run() error {
 		}
 	}
 
-	log.Println("gophermart: shutdown complete")
+	slog.Info("gophermart shutdown complete")
 	return nil
 }
