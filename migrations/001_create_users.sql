@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS users (
+    id BIGSERIAL PRIMARY KEY,
+    login TEXT UNIQUE NOT NULL,
+    password TEXT NOT NULL,
+    balance BIGINT NOT NULL DEFAULT 0,
+    withdrawn BIGINT NOT NULL DEFAULT 0
+);
